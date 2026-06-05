@@ -68,7 +68,9 @@ def main() -> None:
     print(f"  sample_submission: {sample.shape}")
 
     # ── Build features ────────────────────────────────────────────────
-    X_test, _ = build_features(test, encoders=enc)
+    feat_cols = arts.get("feature_cols")
+    X_test_all, _ = build_features(test, encoders=enc)
+    X_test = X_test_all[feat_cols] if feat_cols else X_test_all
 
     # ── Predict ───────────────────────────────────────────────────────
     raw_preds = model.predict(X_test)
