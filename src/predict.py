@@ -12,7 +12,7 @@ Expects:
     data/test.csv
     data/sample_submission.csv
 Writes:
-    submissions/submission.csv  — columns: Index, demand  (41 778 rows)
+    submissions/submission.csv  — columns: Index, demand
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ def _inv_logit(x: np.ndarray) -> np.ndarray:
 
 def main() -> None:
     print("=" * 65)
-    print("  Traffic Demand — Prediction")
+    print("  Traffic Demand — XGBoost Prediction")
     print("=" * 65)
 
     # ── Load artifacts ────────────────────────────────────────────────
@@ -49,22 +49,22 @@ def main() -> None:
             f"{arts_path} not found.\n"
             "Run  python src/train.py  first."
         )
-    arts      = joblib.load(arts_path)
-    model     = arts["model"]
-    enc       = arts["encoders"]
-    use_logit = arts["use_logit"]
+    arts       = joblib.load(arts_path)
+    model      = arts["model"]
+    enc        = arts["encoders"]
+    use_logit  = arts["use_logit"]
     holdout_r2 = arts.get("holdout_r2", float("nan"))
 
     print(f"\n  Loaded artifacts from {arts_path}")
     print(f"  use_logit   = {use_logit}")
-    print(f"  holdout R²  = {holdout_r2:.6f}  "
-          f"(≈ score {max(0, 100*holdout_r2):.2f})")
+    print(f"  holdout R2  = {holdout_r2:.6f}  "
+          f"(~ score {max(0, 100*holdout_r2):.2f})")
     print(f"  feature cols: {arts.get('feature_cols', '?')}")
 
     # ── Load test data ────────────────────────────────────────────────
     test   = pd.read_csv(DATA_DIR / "test.csv")
     sample = pd.read_csv(DATA_DIR / "sample_submission.csv")
-    print(f"\n  test            : {test.shape}")
+    print(f"\n  test             : {test.shape}")
     print(f"  sample_submission: {sample.shape}")
 
     # ── Build features ────────────────────────────────────────────────
@@ -81,20 +81,14 @@ def main() -> None:
     print(f"    median = {np.median(preds):.6f}")
     print(f"    std    = {preds.std():.6f}")
 
-    # ── Sanity check ──────────────────────────────────────────────────
-    if len(preds) != len(sample):
-        raise ValueError(
-            f"Row-count mismatch: sample_submission has {len(sample)} rows "
-            f"but model produced {len(preds)} predictions."
-        )
-
     # ── Build and save submission ──────────────────────────────────────
-    sub = sample[["Index"]].copy()
+    # sample_submission is a 5-row example — use test.csv indices for full output
+    sub = test[["Index"]].copy().reset_index(drop=True)
     sub["demand"] = preds
 
     out_path = SUBMISSIONS_DIR / "submission.csv"
     sub.to_csv(out_path, index=False)
-    print(f"\n  Submission saved → {out_path}  ({len(sub):,} rows)")
+    print(f"\n  Submission saved -> {out_path}  ({len(sub):,} rows)")
     print(f"  Columns: {list(sub.columns)}")
     print(f"\n{'='*65}")
 
